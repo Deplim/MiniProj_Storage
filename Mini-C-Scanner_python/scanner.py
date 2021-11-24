@@ -3,24 +3,25 @@ from enum import Enum
 
 # DKU - JeongEuiRyeong - 2021.11.24
 
-'''MiniCScanner 
 
-getToken() : 실행될 때마다 토큰 하나씩 추출
-exceptComment() : source 코드에서 주석문 모두 삭제
-'''
 class MiniCScanner:
-    OPERATION_CHARS = "+-*/%=!&|!<>" #연산자 문자
-    SINGLE_ST = "[]{}(),;‘’" # 기호 문자
-    HEX_ALPHA = "ABCDEF" # 16진수에서 알파벳으로 들어가는 문자
+    """MiniCScanner
+
+    getToken() : 실행될 때마다 토큰 하나씩 추출
+    exceptComment() : source 코드에서 주석문 모두 삭제
+    """
+
+    OPERATION_CHARS = "+-*/%=!&|!<>"  # 연산자 문자
+    SINGLE_ST = "[]{}(),;‘’"  # 기호 문자
+    HEX_ALPHA = "ABCDEF"  # 16진수에서 알파벳으로 들어가는 문자
     # 연산자 리스트
     OPERATOR = ["+", "-", "*", "/", "%", "=", "!", "&&", "||", "==", "!=", "<", ">", "<=", ">="]
     # State Diagram (상태 전이도) 에서 final state 가 될 수 있는 state
-    FINAL_STATE = ["IDorKeyword", "Zero", "Hex", "Oct", "Dec", "Operator", "SingleOperator", 
-                    "ConstD_", "ConstS_", "RealN_", "RealNe_"] 
-    flag = None # getToken 을 다시 실행할때 이전의 state 를 그대로 받아오고 싶은 경우 사용
+    FINAL_STATE = ["IDorKeyword", "Zero", "Hex", "Oct", "Dec", "Operator", "SingleOperator", "ConstD_", "ConstS_",
+                   "RealN_", "RealNe_"]
+    flag = None  # getToken 을 다시 실행할때 이전의 state 를 그대로 받아오고 싶은 경우 사용
 
-
-    ''' graph
+    """ graph
 
     state diagram 을 Dictionary 로 구현. 
     key = state name, value(dict) : Input and target state
@@ -29,29 +30,30 @@ class MiniCScanner:
         Initial, IDorKeyword, Zero, PreHex, Hex, Oct, Dec, Operator, SingleOperator
         Const, ConstS, ConstD, ConstS_, ConstD_
         RealN, RealN_, RealNe, RealNe2, RealNe_ 
-    '''
-    graph = {"Initial" : {"whitespace" : "Initial", "OC": "Operator", "SSC" : "SingleOperator", "Alphabet":"IDorKeyword", "_":"IDorKeyword", "0" : "Zero", "digit except 0": "Dec", "‘" : "Const"},
-             "IDorKeyword" : {"digit" : "IDorKeyword", "Alphabet" : "IDorKeyword"},
-             "Dec" : {"digit" : "Dec", "." : "RealN", "e" : "RealNe"},
-             "Zero" : {"digit" : "Oct", "x" : "PreHex", "." : "RealN"},
-             "Oct" : {"digit" : "Oct"},
-             "PreHex" : {"digit" : "Hex", "HEX_ALPHA" : "Hex"},
-             "Hex" : {"digit" : "Hex", "HEX_ALPHA" : "Hex"},
-             "Operator" : {"OC" : "Operator"},
-             "SingleOperator" : {},
-             "Const" : {"Alphabet" : "ConstS", "digit" : "ConstD"},
-             "ConstS" : {"Alphabet" : "ConstS", "’" : "ConstS_"},
-             "ConstS_" : {},
-             "ConstD" : {"digit" : "ConstD", "’" : "ConstS_"},
-             "ConstD_" : {},
-             "RealN" : {"digit" : "RealN_"},
-             "RealN_" : {"digit" : "RealN_", "e" : "RealNe"},
-             "RealNe" : {"+" : "RealNe2", "-" : "RealNe2"},
-             "RealNe2" : {"digit" : "RealNe_"},
-             "RealNe_" : {"digit" : "RealNe_"}
+    """
+    graph = {"Initial": {"whitespace": "Initial", "OC": "Operator", "SSC": "SingleOperator", "Alphabet": "IDorKeyword",
+                         "_": "IDorKeyword", "0": "Zero", "digit except 0": "Dec", "‘": "Const"},
+             "IDorKeyword": {"digit": "IDorKeyword", "Alphabet": "IDorKeyword"},
+             "Dec": {"digit": "Dec", ".": "RealN", "e": "RealNe"},
+             "Zero": {"digit": "Oct", "x": "PreHex", ".": "RealN"},
+             "Oct": {"digit": "Oct"},
+             "PreHex": {"digit": "Hex", "HEX_ALPHA": "Hex"},
+             "Hex": {"digit": "Hex", "HEX_ALPHA": "Hex"},
+             "Operator": {"OC": "Operator"},
+             "SingleOperator": {},
+             "Const": {"Alphabet": "ConstS", "digit": "ConstD"},
+             "ConstS": {"Alphabet": "ConstS", "’": "ConstS_"},
+             "ConstS_": {},
+             "ConstD": {"digit": "ConstD", "’": "ConstS_"},
+             "ConstD_": {},
+             "RealN": {"digit": "RealN_"},
+             "RealN_": {"digit": "RealN_", "e": "RealNe"},
+             "RealNe": {"+": "RealNe2", "-": "RealNe2"},
+             "RealNe2": {"digit": "RealNe_"},
+             "RealNe_": {"digit": "RealNe_"}
     }
 
-    def __init__(self, filePath, printSrc = False):
+    def __init__(self, filePath, printSrc=False):
         self.__idx = 0
         self.SYMBOL_TABLE = SymbolTable() # scanner 인스턴스를 생성할 때 symbol_table 도 생성
 
@@ -59,7 +61,7 @@ class MiniCScanner:
         try:
             with open(filePath, 'r', encoding='UTF-8') as f:
                 self.__src = f.read()
-        except:
+        except Exception:
             raise Exception(LexicalError.CannotOpenFile.value)
 
         # exceptComment 를 실행시켜서 주석문을 제거하는 과정에 오류가 없는지 확인
@@ -93,11 +95,16 @@ class MiniCScanner:
 
             # Input 값의 종류 확인하기
             Input = ""
-            if c.isspace() : Input = "whitespace"
-            if c.isalpha() : Input = "Alphabet"
-            if c.isdigit() : Input = "digit"
-            if c in self.OPERATION_CHARS : Input = "OC"
-            if c in self.SINGLE_ST : Input = "SSC"    
+            if c.isspace():
+                Input = "whitespace"
+            if c.isalpha():
+                Input = "Alphabet"
+            if c.isdigit():
+                Input = "digit"
+            if c in self.OPERATION_CHARS:
+                Input = "OC"
+            if c in self.SINGLE_ST:
+                Input = "SSC"
             if c == "_" or c == "." or c == "‘" or c == "’":
                 Input = c
 
@@ -117,7 +124,7 @@ class MiniCScanner:
                 if c == "e":
                     Input = c
             if state == "RealNe":
-                if c == "+" or c =="-":
+                if c == "+" or c == "-":
                     Input = c
 
             # 그래프를 확인하고 state 이동
@@ -159,7 +166,7 @@ class MiniCScanner:
         # 연산자를 인식한 경우 OPERATOR list 에 있는지 확인
         # graph 의 Operator state 에서 연산자 문자를 받는데 제약이 없기 때문에 이 단계에서 확인해야 함.
         if state == "Operator" and tokenString not in self.OPERATOR:
-             raise Exception(LexicalError.InvalidOperator.value)
+            raise Exception(LexicalError.InvalidOperator.value)
 
         # 인식한 token string 이 있는 경우
         if tokenString != "":
@@ -175,7 +182,7 @@ class MiniCScanner:
         target =  self.__src
         while 1:
             left_c = target.find("(*")
-            right_c = target.find("*)") # 좌측, 우측 comment 기호를 각각 탐색
+            right_c = target.find("*)")  # 좌측, 우측 comment 기호를 각각 탐색
             
             # 두 기호가 다 없으면 주석문이 없는 것이므로 break
             if left_c == -1 and right_c == -1: 
@@ -186,48 +193,50 @@ class MiniCScanner:
                 if left_c > right_c: # 두 기호가 다 있지만 순서가 잘못된 경우 오류 발생
                     return True
                 target = target[:left_c]+target[right_c+2:]
-            else: # 한쪽 기호만 있는경우 주석문을 잘못 작성한 것이므로 오류 발생
+            else:  # 한쪽 기호만 있는경우 주석문을 잘못 작성한 것이므로 오류 발생
                 return True
 
-        self.__src = target # 주석문이 삭제된 소스코드 저장
+        self.__src = target  # 주석문이 삭제된 소스코드 저장
         return False
 
 
-'''LexicalError 
-
-발생할 수 있는 Lexical Error 종류를 속성으로 가지고 있음.
-'''
 class LexicalError(Enum):
-    CannotOpenFile =  "Lexical Error - 소스 파일을 불러오지 못함."
-    InvalidComment =  "Lexical Error - 주석문이 올바르게 작성되지 않음."
-    InvalidSymbol =   "Lexical Error - 인식할 수 없는 token."
+    """LexicalError
+
+    발생할 수 있는 Lexical Error 종류를 속성으로 가지고 있음.
+    """
+
+    CannotOpenFile = "Lexical Error - 소스 파일을 불러오지 못함."
+    InvalidComment = "Lexical Error - 주석문이 올바르게 작성되지 않음."
+    InvalidSymbol = "Lexical Error - 인식할 수 없는 token."
     InvalidOperator = "Lexical Error - 잘못된 연산자."
 
 
-'''Token
-
-setSymbol() : 현재 state 와 token string 을 받아 출력할 token symbol 과 val 을 구함.
-get_token() : token symbol 과 val 을 string 형식으로 반환.
-'''
 class Token:
-    TokenSymbol = { # 토큰 번호를 추출하기 위한 딕셔너리
-        "tident" : 3, "tconst" : 4,
-        "Dec" : 5, "Oct" : 6, "Hex" : 7, "treal" : 8,
+    """Token
 
-        "+" : 10, "-" : 11, "*" : 12, "/" : 13, "%" : 14, "=" : 15, "!" : 16, "&&" : 17, 
-        "||" : 18, "==" : 19, "!=" : 20, "<" : 21, ">" : 22, "<=" : 23, ">=" : 24,
+    setSymbol() : 현재 state 와 token string 을 받아 출력할 token symbol 과 val 을 구함.
+    get_token() : token symbol 과 val 을 string 형식으로 반환.
+    """
 
-        "[" :30, "]" : 31, "{" : 32, "}" : 33, "(" : 34, ")" : 35, "," : 36, ";" : 37, "‘" : 38, "’" : 39,
+    TokenSymbol = {  # 토큰 번호를 추출하기 위한 딕셔너리
+        "tident": 3, "tconst": 4,
+        "Dec": 5, "Oct": 6, "Hex": 7, "treal": 8,
 
-        "if" : 40, "while" : 41, "for" : 42, "const" : 43, "int" : 44, "float" : 45, "else" : 46,
-        "return" : 47, "void" : 48, "break" : 49, "continue" : 50, "char" : 51   
+        "+": 10, "-": 11, "*": 12, "/": 13, "%": 14, "=": 15, "!": 16, "&&": 17,
+        "||": 18, "==": 19, "!=": 20, "<": 21, ">": 22, "<=": 23, ">=": 24,
+
+        "[": 30, "]": 31, "{": 32, "}": 33, "(": 34, ")": 35, ",": 36, ";": 37, "‘": 38, "’": 39,
+
+        "if": 40, "while": 41, "for": 42, "const": 43, "int": 44, "float": 45, "else": 46,
+        "return": 47, "void": 48, "break": 49, "continue": 50, "char": 51
     }
     OP_TABLE = ["if", "while", "for", "const", "int", "float", "else", "return", "void", "break", "continue", "char"]
 
     def __init__(self, symbolTable):
-        self.__symbol = None # 토큰 번호
-        self.__val = "0" # 토큰 value
-        self.__tokenString = "" # 토큰 string
+        self.__symbol = None # token symbol (토큰 번호)
+        self.__val = "0" # token value
+        self.__tokenString = ""
         self.__symbolTable = symbolTable 
 
     def setSymbol(self, state, tokenS):
@@ -242,7 +251,7 @@ class Token:
                 self.__symbol = self.TokenSymbol["tident"]
                 self.__val = tident_num
 
-        # 정수, 실수, 상수에 대해서는 value 에 token string 을 그대로 넣음.
+        # 정수, 실수, 상수에 대해서는 value 에 token string 을 넣음.
         elif state in ("Zero", "Dec", "Oct", "Hex"):
             if state == "Zero":
                 self.__symbol = self.TokenSymbol["Dec"]
@@ -254,16 +263,16 @@ class Token:
             self.__symbol = self.TokenSymbol["treal"]
             self.__val = tokenS
         
-        elif state == "Const": # 왼쪽 따음표
+        elif state == "Const":  # 왼쪽 따옴표
             self.__symbol = self.TokenSymbol["‘"]
         elif state in ("ConstD_", "ConstS_"):
             if '’' not in tokenS:
                 self.__symbol = self.TokenSymbol["tconst"] # 
                 self.__val = tokenS
             else:
-                self.__symbol = self.TokenSymbol["’"] # 오른쪽 따음표
+                self.__symbol = self.TokenSymbol["’"]  # 오른쪽 따옴표
         
-        # 연산자와 기호의 경우 token symbol 에 token string 을 그대로 넣고, 따로 value 를 설정하지 않음 (default = "0")
+        # 연산자와 기호의 경우 따로 value 를 설정하지 않고 (default = "0"), token symbol 에 token string 을 넣음.
         elif state == "Operator":
             self.__symbol = self.TokenSymbol[tokenS]
 
@@ -273,15 +282,16 @@ class Token:
     def get_token(self):
         return "{0: <10} : ({1}, {2})".format(self.__tokenString, self.__symbol, self.__val)
 
-'''SymbolTable
 
-check_symbol() : token 이 사용자 정의어인 경우 symbol table 에 해당 문자열이 있으면 번호 반환, 없으면 새로 설정하고 번호 반환.
-getSymbolTable() : symbol table (dictionary) 반환
-'''
 class SymbolTable:
+    """SymbolTable
+
+    check_symbol() : token 이 사용자 정의어인 경우 symbol table 에 해당 문자열이 있으면 번호 반환, 없으면 새로 설정하고 번호 반환.
+    getSymbolTable() : symbol table (dictionary) 반환
+    """
     def __init__(self):
         self.__Table = {}
-        self.__count = 1 #사용자 정의어의 번호를 지정하기 위해 사용하는 변수.
+        self.__count = 1  # 사용자 정의어의 번호를 지정하기 위해 사용하는 변수.
 
     def check_symbol(self, s):
         if s in self.__Table:
@@ -290,6 +300,7 @@ class SymbolTable:
             self.__Table[s] = self.__count
             self.__count += 1 
             return self.__Table[s]
+
     def getSymbolTable(self):
         return self.__Table
 
