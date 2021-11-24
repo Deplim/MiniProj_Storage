@@ -97,14 +97,15 @@ class MiniCScanner:
             Input = ""
             if c.isspace():
                 Input = "whitespace"
-            if c.isalpha():
+            elif c.isalpha():
                 Input = "Alphabet"
-            if c.isdigit():
+            elif c.isdigit():
                 Input = "digit"
-            if c in self.OPERATION_CHARS:
+            elif c in self.OPERATION_CHARS:
                 Input = "OC"
-            if c in self.SINGLE_ST:
+            elif c in self.SINGLE_ST:
                 Input = "SSC"
+            
             if c == "_" or c == "." or c == "‘" or c == "’":
                 Input = c
 
@@ -114,16 +115,16 @@ class MiniCScanner:
                     Input = "digit except 0"
                 if c == "0":
                     Input = c
-            if state == "Zero":
+            elif state == "Zero":
                 if c == "x":
                     Input = c
-            if state == "Hex" or "PreHex":
+            elif (state == "Hex") or (state == "PreHex"):
                 if c in self.HEX_ALPHA:
                     Input = "HEX_ALPHA" 
-            if state == "RealN_":
+            elif (state == "Dec") or (state == "RealN_"): 
                 if c == "e":
                     Input = c
-            if state == "RealNe":
+            elif state == "RealNe":
                 if c == "+" or c == "-":
                     Input = c
 
