@@ -32,7 +32,7 @@ class MiniCScanner:
     '''
     graph = {"Initial" : {"whitespace" : "Initial", "OC": "Operator", "SSC" : "SingleOperator", "Alphabet":"IDorKeyword", "_":"IDorKeyword", "0" : "Zero", "digit except 0": "Dec", "‘" : "Const"},
              "IDorKeyword" : {"digit" : "IDorKeyword", "Alphabet" : "IDorKeyword"},
-             "Dec" : {"digit" : "Dec", "." : "RealN"},
+             "Dec" : {"digit" : "Dec", "." : "RealN", "e" : "RealNe"},
              "Zero" : {"digit" : "Oct", "x" : "PreHex", "." : "RealN"},
              "Oct" : {"digit" : "Oct"},
              "PreHex" : {"digit" : "Hex", "HEX_ALPHA" : "Hex"},
@@ -254,16 +254,16 @@ class Token:
             self.__symbol = self.TokenSymbol["treal"]
             self.__val = tokenS
         
-        elif state == "Const":
+        elif state == "Const": # 왼쪽 따음표
             self.__symbol = self.TokenSymbol["‘"]
         elif state in ("ConstD_", "ConstS_"):
             if '’' not in tokenS:
-                self.__symbol = self.TokenSymbol["tconst"]
+                self.__symbol = self.TokenSymbol["tconst"] # 
                 self.__val = tokenS
             else:
-                self.__symbol = self.TokenSymbol["’"]
+                self.__symbol = self.TokenSymbol["’"] # 오른쪽 따음표
         
-        # 연산자의 경우 token symbol 에 token string 을 그대로 넣고, 따로 value 를 설정하지 않음 (default = "0")
+        # 연산자와 기호의 경우 token symbol 에 token string 을 그대로 넣고, 따로 value 를 설정하지 않음 (default = "0")
         elif state == "Operator":
             self.__symbol = self.TokenSymbol[tokenS]
 
@@ -292,6 +292,7 @@ class SymbolTable:
             return self.__Table[s]
     def getSymbolTable(self):
         return self.__Table
+
 
 if __name__ == "__main__":
     if len(sys.argv) <=1:
