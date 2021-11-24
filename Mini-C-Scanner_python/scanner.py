@@ -130,9 +130,13 @@ class MiniCScanner:
             # 그래프를 확인하고 state 이동
             if Input in self.graph[state]:
                 state = self.graph[state][Input]
-                if Input != "whitespace":
+                if Input != "whitespace": # 문자가 공백이 아니라면 string 에 추가
                     tokenString += c
 
+                """
+                따옴표 (‘, ’) 는 그 자체로 토큰이면서, 동시에 상수를 구별하기 위한 요소이므로
+                상수와 관련된 state 를 거치는 경우, 따옴표도 token 으로 출력될 수 있도록 추가 코드 작성함. 
+                """
                 # 왼쪽 따옴표 "‘" 를 만난경우 token 으로 출력하고 state 는 유지
                 if state == "Const": 
                     self.flag = state
